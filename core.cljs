@@ -69,7 +69,9 @@
   (let [tables (:tables config)
         queries (reduce
                   (fn [tables [table-name table]]
-                    (let [rows (create-rows tables (get table :columns) (get table :count 1))]
+                    (let [rows (create-rows tables
+                                            (get table :columns)
+                                            (get table :count 1))]
                       (assoc tables table-name rows)))
                   {}
                   tables)
