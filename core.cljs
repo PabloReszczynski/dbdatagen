@@ -6,11 +6,24 @@
             [clojure.edn :as edn]
             [clojure.string :as str]
             [applied-science.js-interop :as j]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.pprint :refer [pprint]])
+  (:require-macros [cljs.core :refer [this-as]]))
+
+(def tty? (boolean js/process.stdin.isTTY))
 
 (def config
-  (-> (slurp "./config.edn")
-      (p/then edn/read-string)))
+  (let [args (->> js/process.argv
+                  (drop 3)
+                  (partition 2)
+                  (map (fn [[k v]] [(str/replace k "-" "") v]))
+                  (into {}))
+        config-file (args "c")
+        config-input (args "i")
+        config-pipe (not tty?)]
+    (cond
+      config-file (-> (load-file config-file) edn/read-string)
+      config-input (edn/read-string config-input)
+      config-pipe (p/then (slurp js/process.stdin.fd) edn/read-string))))
 
 (defn format-type [v]
   (cond
