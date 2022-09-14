@@ -11,6 +11,11 @@
 
 (def tty? (boolean js/process.stdin.isTTY))
 
+(js/process.stdout.on "error"
+  (fn [err]
+    (when (= err.code "EPIPE")
+      (js/process.exit 0))))
+
 (def config
   (let [args (->> js/process.argv
                   (drop 3)
@@ -21,9 +26,10 @@
         config-input (args "i")
         config-pipe (not tty?)]
     (cond
-      config-file (-> (load-file config-file) edn/read-string)
+      config-file (p/then (slurp config-file) edn/read-string)
       config-input (edn/read-string config-input)
-      config-pipe (p/then (slurp js/process.stdin.fd) edn/read-string))))
+      config-pipe (p/then (slurp js/process.stdin.fd) edn/read-string)
+      :else false)))
 
 (defn format-type [v]
   (cond
